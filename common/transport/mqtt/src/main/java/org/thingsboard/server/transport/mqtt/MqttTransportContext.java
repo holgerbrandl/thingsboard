@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 import org.thingsboard.server.common.transport.TransportContext;
-import org.thingsboard.server.transport.mqtt.adaptors.MqttTransportAdaptor;
+import org.thingsboard.server.transport.mqtt.adaptors.JsonMqttAdaptor;
+import org.thingsboard.server.transport.mqtt.adaptors.ProtoMqttAdaptor;
 
 /**
  * Created by ashvayka on 04.10.18.
@@ -40,11 +41,19 @@ public class MqttTransportContext extends TransportContext {
 
     @Getter
     @Autowired
-    private MqttTransportAdaptor adaptor;
+    private JsonMqttAdaptor jsonMqttAdaptor;
+
+    @Getter
+    @Autowired
+    private ProtoMqttAdaptor protoMqttAdaptor;
 
     @Getter
     @Value("${transport.mqtt.netty.max_payload_size}")
     private Integer maxPayloadSize;
+
+    @Getter
+    @Value("${transport.mqtt.netty.skip_validity_check_for_client_cert:false}")
+    private boolean skipValidityCheckForClientCert;
 
     @Getter
     @Setter

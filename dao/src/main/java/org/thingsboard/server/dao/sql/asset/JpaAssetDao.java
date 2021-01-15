@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+
+import static org.thingsboard.server.dao.asset.BaseAssetService.TB_SERVICE_QUEUE;
 
 /**
  * Created by Valerii Sosliuk on 5/19/2017.
@@ -175,5 +177,10 @@ public class JpaAssetDao extends JpaAbstractSearchTextDao<AssetEntity, Asset> im
             }
         }
         return list;
+    }
+
+    @Override
+    public Long countByTenantId(TenantId tenantId) {
+        return assetRepository.countByTenantIdAndTypeIsNot(tenantId.getId(), TB_SERVICE_QUEUE);
     }
 }

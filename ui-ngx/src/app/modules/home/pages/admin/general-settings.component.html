@@ -1,6 +1,6 @@
 <!--
 
-    Copyright © 2016-2020 The Thingsboard Authors
+    Copyright © 2016-2021 The Thingsboard Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -35,6 +35,10 @@
               {{ 'admin.base-url-required' | translate }}
             </mat-error>
           </mat-form-field>
+          <tb-checkbox formControlName="prohibitDifferentUrl" style="display: block; padding-bottom: 16px;">
+            {{ 'admin.prohibit-different-url' | translate }}
+          </tb-checkbox>
+          <div class="tb-hint" translate>admin.prohibit-different-url-hint</div>
           <div fxLayout="row" fxLayoutAlign="end center" style="width: 100%;" class="layout-wrap">
             <button mat-button mat-raised-button color="primary" [disabled]="(isLoading$ | async) || generalSettings.invalid || !generalSettings.dirty"
                     type="submit">{{'action.save' | translate}}

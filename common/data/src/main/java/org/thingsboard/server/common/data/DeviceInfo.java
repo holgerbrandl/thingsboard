@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ public class DeviceInfo extends Device {
 
     private String customerTitle;
     private boolean customerIsPublic;
+    private String deviceProfileName;
 
     public DeviceInfo() {
         super();
@@ -32,9 +33,10 @@ public class DeviceInfo extends Device {
         super(deviceId);
     }
 
-    public DeviceInfo(Device device, String customerTitle, boolean customerIsPublic) {
+    public DeviceInfo(Device device, String customerTitle, boolean customerIsPublic, String deviceProfileName) {
         super(device);
         this.customerTitle = customerTitle;
         this.customerIsPublic = customerIsPublic;
+        this.deviceProfileName = deviceProfileName;
     }
 }

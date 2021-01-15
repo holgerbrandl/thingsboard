@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -97,10 +97,6 @@ export class EntitySelectComponent implements ControlValueAccessor, OnInit, Afte
   ngOnInit() {
     this.entitySelectFormGroup.get('entityType').valueChanges.subscribe(
       (value) => {
-        if(value === AliasEntityType.CURRENT_TENANT || value === AliasEntityType.CURRENT_USER ||
-           value === AliasEntityType.CURRENT_USER_OWNER) {
-          this.modelValue.id = NULL_UUID;
-        }
         this.updateView(value, this.modelValue.id);
       }
     );
@@ -140,20 +136,23 @@ export class EntitySelectComponent implements ControlValueAccessor, OnInit, Afte
   }
 
   updateView(entityType: EntityType | AliasEntityType | null, entityId: string | null) {
-    if (this.modelValue.entityType !== entityType ||
-      this.modelValue.id !== entityId) {
-        this.modelValue = {
-          entityType,
-          id: this.modelValue.entityType !== entityType ? null : entityId
-        };
-        if (this.modelValue.entityType && (this.modelValue.id ||
-          this.modelValue.entityType === AliasEntityType.CURRENT_TENANT ||
-          this.modelValue.entityType === AliasEntityType.CURRENT_USER ||
-          this.modelValue.entityType === AliasEntityType.CURRENT_USER_OWNER)) {
-          this.propagateChange(this.modelValue);
-        } else {
-          this.propagateChange(null);
-        }
+    if (this.modelValue.entityType !== entityType || this.modelValue.id !== entityId) {
+      this.modelValue = {
+        entityType,
+        id: this.modelValue.entityType !== entityType ? null : entityId
+      };
+
+      if (this.modelValue.entityType === AliasEntityType.CURRENT_TENANT
+        || this.modelValue.entityType === AliasEntityType.CURRENT_USER
+        || this.modelValue.entityType === AliasEntityType.CURRENT_USER_OWNER) {
+        this.modelValue.id = NULL_UUID;
+      }
+
+      if (this.modelValue.entityType && this.modelValue.id) {
+        this.propagateChange(this.modelValue);
+      } else {
+        this.propagateChange(null);
+      }
     }
   }
 }

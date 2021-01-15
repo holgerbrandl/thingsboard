@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -32,9 +32,11 @@ import {
 export interface ComplexFilterPredicateDialogData {
   complexPredicate: ComplexFilterPredicateInfo;
   key: string;
-  disabled: boolean;
+  readonly: boolean;
   isAdd: boolean;
   valueType: EntityKeyValueType;
+  displayUserParameters: boolean;
+  allowUserDynamicSource: boolean;
 }
 
 @Component({
@@ -73,6 +75,9 @@ export class ComplexFilterPredicateDialogComponent extends
         predicates: [this.data.complexPredicate.predicates, [Validators.required]]
       }
     );
+    if (this.data.readonly) {
+      this.complexFilterFormGroup.disable({emitEvent: false});
+    }
   }
 
   ngOnInit(): void {

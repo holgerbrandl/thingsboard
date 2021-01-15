@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import { AppState } from '@core/core.state';
 import { EntityAction } from '@home/models/entity/entity-component.models';
 import { EntityTableConfig } from '@home/models/entity/entities-table-config.models';
 import { PageLink } from '@shared/models/page/page-link';
-import { isObject, isString } from '@core/utils';
+import { deepTrim } from '@core/utils';
 
 // @dynamic
 @Directive()
@@ -58,7 +58,7 @@ export abstract class EntityComponent<T extends BaseData<HasId>,
   }
 
   get isAdd(): boolean {
-    return this.entityValue && !this.entityValue.id;
+    return this.entityValue && (!this.entityValue.id || !this.entityValue.id.id);
   }
 
   @Input()
@@ -115,20 +115,7 @@ export abstract class EntityComponent<T extends BaseData<HasId>,
   }
 
   prepareFormValue(formValue: any): any {
-    return this.deepTrim(formValue);
-  }
-
-  private deepTrim(obj: object): object {
-    return Object.keys(obj).reduce((acc, curr) => {
-      if (isString(obj[curr])) {
-        acc[curr] = obj[curr].trim();
-      } else if (isObject(obj[curr])) {
-        acc[curr] = this.deepTrim(obj[curr]);
-      } else {
-        acc[curr] = obj[curr];
-      }
-      return acc;
-    }, Array.isArray(obj) ? [] : {});
+    return deepTrim(formValue);
   }
 
   protected setEntitiesTableConfig(entitiesTableConfig: C) {

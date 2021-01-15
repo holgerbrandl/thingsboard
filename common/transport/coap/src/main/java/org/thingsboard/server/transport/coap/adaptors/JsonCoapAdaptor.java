@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,6 +121,16 @@ public class JsonCoapAdaptor implements CoapTransportAdaptor {
         JsonElement result = JsonConverter.toJson(msg);
         response.setPayload(result.toString());
         return response;
+    }
+
+    @Override
+    public TransportProtos.ProvisionDeviceRequestMsg convertToProvisionRequestMsg(UUID sessionId, Request inbound) throws AdaptorException {
+        String payload = validatePayload(sessionId, inbound, false);
+        try {
+            return JsonConverter.convertToProvisionRequestMsg(payload);
+        } catch (IllegalStateException | JsonSyntaxException ex) {
+            throw new AdaptorException(ex);
+        }
     }
 
     @Override

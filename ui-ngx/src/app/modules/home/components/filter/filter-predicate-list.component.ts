@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -61,6 +61,10 @@ export class FilterPredicateListComponent implements ControlValueAccessor, OnIni
   @Input() key: string;
 
   @Input() operation: ComplexOperation = ComplexOperation.AND;
+
+  @Input() displayUserParameters = true;
+
+  @Input() allowUserDynamicSource = true;
 
   filterListFormGroup: FormGroup;
 
@@ -150,10 +154,12 @@ export class FilterPredicateListComponent implements ControlValueAccessor, OnIni
       panelClass: ['tb-dialog', 'tb-fullscreen-dialog'],
       data: {
         complexPredicate: predicate.keyFilterPredicate as ComplexFilterPredicateInfo,
-        disabled: this.disabled,
+        readonly: this.disabled,
         valueType: this.valueType,
         key: this.key,
-        isAdd: true
+        isAdd: true,
+        displayUserParameters: this.displayUserParameters,
+        allowUserDynamicSource: this.allowUserDynamicSource
       }
     }).afterClosed().pipe(
       map((result) => {

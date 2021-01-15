@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 import { Component, OnInit } from '@angular/core';
 import { MenuService } from '@core/services/menu.service';
+import { MenuSection } from '@core/services/menu.models';
 
 @Component({
   selector: 'tb-side-menu',
@@ -27,6 +28,10 @@ export class SideMenuComponent implements OnInit {
   menuSections$ = this.menuService.menuSections();
 
   constructor(private menuService: MenuService) {
+  }
+
+  trackByMenuSection(index: number, section: MenuSection){
+    return section.id;
   }
 
   ngOnInit() {

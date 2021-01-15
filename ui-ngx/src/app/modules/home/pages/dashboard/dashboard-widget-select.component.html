@@ -1,6 +1,6 @@
 <!--
 
-    Copyright © 2016-2020 The Thingsboard Authors
+    Copyright © 2016-2021 The Thingsboard Authors
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -74,11 +74,11 @@
     </mat-tab>
   </mat-tab-group>
   <span translate *ngIf="widgetsBundle && !hasWidgetTypes()"
-        style="text-transform: uppercase; display: flex;"
+        style="display: flex;"
         fxLayoutAlign="center center"
         class="mat-headline tb-absolute-fill">widgets-bundle.empty</span>
   <span translate *ngIf="!widgetsBundle"
-        style="text-transform: uppercase; display: flex;"
+        style="display: flex;"
         fxLayoutAlign="center center"
         class="mat-headline tb-absolute-fill">widget.select-widgets-bundle</span>
 </div>

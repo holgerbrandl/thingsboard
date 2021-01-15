@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import {
   deepClone,
   insertVariable,
   isDefined,
+  isDefinedAndNotNull,
   isEqual,
   isNumber,
   isUndefined
@@ -380,14 +381,14 @@ export class TbFlot {
     const yaxesMap: {[units: string]: TbFlotAxisOptions} = {};
     const predefinedThresholds: TbFlotThresholdMarking[] = [];
     const thresholdsDatasources: Datasource[] = [];
-    if (this.settings.customLegendEnabled) {
+    if (this.settings.customLegendEnabled && this.settings.dataKeysListForLabels?.length) {
       this.labelPatternsSourcesData = [];
       const labelPatternsDatasources: Datasource[] = [];
       this.settings.dataKeysListForLabels.forEach((item) => {
         item.settings = {};
       });
       subscription.datasources.forEach((item) => {
-        let datasource: Datasource = {
+        const datasource: Datasource = {
           type: item.type,
           entityType: item.entityType,
           entityId: item.entityId,
@@ -717,6 +718,10 @@ export class TbFlot {
 
   public destroy() {
     this.cleanup();
+    if (this.tooltip) {
+      this.tooltip.stop(true);
+      this.tooltip.hide();
+    }
     if (this.plot) {
       this.plot.destroy();
       this.plot = null;
@@ -824,7 +829,7 @@ export class TbFlot {
       useDashboardTimewindow: false,
       type: widgetType.latest,
       callbacks: {
-        onDataUpdated: (subscription) => {this.thresholdsSourcesDataUpdated(subscription.data)}
+        onDataUpdated: (subscription) => this.thresholdsSourcesDataUpdated(subscription.data)
       }
     };
     this.ctx.subscriptionApi.createSubscription(thresholdsSourcesSubscriptionOptions, true).subscribe(
@@ -891,7 +896,7 @@ export class TbFlot {
       type: widgetType.latest,
       callbacks: {
         onDataUpdated: (subscription) => {
-          this.labelPatternsParamsDataUpdated(subscription.data)
+          this.labelPatternsParamsDataUpdated(subscription.data);
         }
       }
     };
@@ -913,22 +918,22 @@ export class TbFlot {
   }
 
   private substituteLabelPatterns(series: TbFlotSeries, seriesIndex: number) {
-    let seriesLabelPatternsSourcesData = this.labelPatternsSourcesData.filter((item) => {
+    const seriesLabelPatternsSourcesData = this.labelPatternsSourcesData.filter((item) => {
       return item.datasource.entityId === series.datasource.entityId;
     });
     let label = createLabelFromDatasource(series.datasource, series.dataKey.pattern);
     for (let i = 0; i < seriesLabelPatternsSourcesData.length; i++) {
-      let keyData = seriesLabelPatternsSourcesData[i];
+      const keyData = seriesLabelPatternsSourcesData[i];
       if (keyData && keyData.data && keyData.data[0]) {
-        let attrValue = keyData.data[0][1];
-        let attrName = keyData.dataKey.name;
+        const attrValue = keyData.data[0][1];
+        const attrName = keyData.dataKey.name;
         if (isDefined(attrValue) && (attrValue !== null)) {
           label = insertVariable(label, attrName, attrValue);
         }
       }
     }
     if (isDefined(this.subscription.legendData)) {
-      let targetLegendKeyIndex = this.subscription.legendData.keys.findIndex((key) => {
+      const targetLegendKeyIndex = this.subscription.legendData.keys.findIndex((key) => {
         return key.dataIndex === seriesIndex;
       });
       if (targetLegendKeyIndex !== -1) {
@@ -993,7 +998,7 @@ export class TbFlot {
 
   private seriesInfoDivFromInfo(seriesHoverInfo: TbFlotSeriesHoverInfo, seriesIndex: number): string {
     const units = seriesHoverInfo.units && seriesHoverInfo.units.length ? seriesHoverInfo.units : this.trackUnits;
-    const decimals = isDefined(seriesHoverInfo.decimals) ? seriesHoverInfo.decimals : this.trackDecimals;
+    const decimals = isDefinedAndNotNull(seriesHoverInfo.decimals) ? seriesHoverInfo.decimals : this.trackDecimals;
     const divElement = this.seriesInfoDiv(seriesHoverInfo.label, seriesHoverInfo.color,
       seriesHoverInfo.value, units, decimals, seriesHoverInfo.index === seriesIndex, null, seriesHoverInfo.tooltipValueFormatFunction);
     return divElement.prop('outerHTML');
@@ -1020,7 +1025,7 @@ export class TbFlot {
 
   private formatPieTooltip(item: TbFlotPlotItem): string {
     const units = item.series.dataKey.units && item.series.dataKey.units.length ? item.series.dataKey.units : this.trackUnits;
-    const decimals = isDefined(item.series.dataKey.decimals) ? item.series.dataKey.decimals : this.trackDecimals;
+    const decimals = isDefinedAndNotNull(item.series.dataKey.decimals) ? item.series.dataKey.decimals : this.trackDecimals;
     const divElement = this.seriesInfoDiv(item.series.dataKey.label, item.series.dataKey.color,
       item.datapoint[1][0][1], units, decimals, true, item.series.percent, item.series.dataKey.tooltipValueFormatFunction);
     return divElement.prop('outerHTML');
@@ -1093,7 +1098,7 @@ export class TbFlot {
               flex: '1'
             });
             let columnContent = '';
-            for (let i = c*maxRows; i < (c+1)*maxRows; i++) {
+            for (let i = c * maxRows; i < (c + 1) * maxRows; i++) {
               if (i >= hoverData.seriesHover.length) {
                 break;
               }
@@ -1169,7 +1174,7 @@ export class TbFlot {
     if (!this.plot) {
       return;
     }
-    if (!this.tooltipIndividual || item) {
+    if ((!this.tooltipIndividual || item) && !this.ctx.isEdit) {
       const multipleModeTooltip = !this.tooltipIndividual;
       if (multipleModeTooltip) {
         this.plot.unhighlight();
@@ -1282,7 +1287,7 @@ export class TbFlot {
     let minTimeHistorical: any;
     let hoverData: TbFlotSeriesHoverInfo;
     let value: any;
-    let lastValue: any;
+    let lastValue = 0;
     let minDistanceHistorical: number;
     const results: TbFlotHoverInfo[] = [{
       seriesHover: []

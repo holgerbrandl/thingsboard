@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -42,6 +42,8 @@ export class WidgetService {
   private allWidgetsBundles: Array<WidgetsBundle>;
   private systemWidgetsBundles: Array<WidgetsBundle>;
   private tenantWidgetsBundles: Array<WidgetsBundle>;
+
+  private loadWidgetsBundleCacheSubject: ReplaySubject<any>;
 
   constructor(
     private http: HttpClient,
@@ -238,34 +240,36 @@ export class WidgetService {
 
   private loadWidgetsBundleCache(config?: RequestConfig): Observable<any> {
     if (!this.allWidgetsBundles) {
-      const loadWidgetsBundleCacheSubject = new ReplaySubject();
-      this.http.get<Array<WidgetsBundle>>('/api/widgetsBundles',
-        defaultHttpOptionsFromConfig(config)).subscribe(
-        (allWidgetsBundles) => {
-          this.allWidgetsBundles = allWidgetsBundles;
-          this.systemWidgetsBundles = new Array<WidgetsBundle>();
-          this.tenantWidgetsBundles = new Array<WidgetsBundle>();
-          this.allWidgetsBundles = this.allWidgetsBundles.sort((wb1, wb2) => {
-            let res = wb1.title.localeCompare(wb2.title);
-            if (res === 0) {
-              res = wb2.createdTime - wb1.createdTime;
-            }
-            return res;
+      if (!this.loadWidgetsBundleCacheSubject) {
+        this.loadWidgetsBundleCacheSubject = new ReplaySubject();
+        this.http.get<Array<WidgetsBundle>>('/api/widgetsBundles',
+          defaultHttpOptionsFromConfig(config)).subscribe(
+          (allWidgetsBundles) => {
+            this.allWidgetsBundles = allWidgetsBundles;
+            this.systemWidgetsBundles = new Array<WidgetsBundle>();
+            this.tenantWidgetsBundles = new Array<WidgetsBundle>();
+            this.allWidgetsBundles = this.allWidgetsBundles.sort((wb1, wb2) => {
+              let res = wb1.title.localeCompare(wb2.title);
+              if (res === 0) {
+                res = wb2.createdTime - wb1.createdTime;
+              }
+              return res;
+            });
+            this.allWidgetsBundles.forEach((widgetsBundle) => {
+              if (widgetsBundle.tenantId.id === NULL_UUID) {
+                this.systemWidgetsBundles.push(widgetsBundle);
+              } else {
+                this.tenantWidgetsBundles.push(widgetsBundle);
+              }
+            });
+            this.loadWidgetsBundleCacheSubject.next();
+            this.loadWidgetsBundleCacheSubject.complete();
+          },
+          () => {
+            this.loadWidgetsBundleCacheSubject.error(null);
           });
-          this.allWidgetsBundles.forEach((widgetsBundle) => {
-            if (widgetsBundle.tenantId.id === NULL_UUID) {
-              this.systemWidgetsBundles.push(widgetsBundle);
-            } else {
-              this.tenantWidgetsBundles.push(widgetsBundle);
-            }
-          });
-          loadWidgetsBundleCacheSubject.next();
-          loadWidgetsBundleCacheSubject.complete();
-        },
-        () => {
-          loadWidgetsBundleCacheSubject.error(null);
-        });
-      return loadWidgetsBundleCacheSubject.asObservable();
+      }
+      return this.loadWidgetsBundleCacheSubject.asObservable();
     } else {
       return of(null);
     }
@@ -275,6 +279,7 @@ export class WidgetService {
     this.allWidgetsBundles = undefined;
     this.systemWidgetsBundles = undefined;
     this.tenantWidgetsBundles = undefined;
+    this.loadWidgetsBundleCacheSubject = undefined;
   }
 
 }

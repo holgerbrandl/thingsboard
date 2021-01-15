@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,12 @@ public class EntityIdFactory {
                 return new WidgetsBundleId(uuid);
             case WIDGET_TYPE:
                 return new WidgetTypeId(uuid);
+            case DEVICE_PROFILE:
+                return new DeviceProfileId(uuid);
+            case TENANT_PROFILE:
+                return new TenantProfileId(uuid);
+            case API_USAGE_STATE:
+                return new ApiUsageStateId(uuid);
         }
         throw new IllegalArgumentException("EntityType " + type + " is not supported!");
     }

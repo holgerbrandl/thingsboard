@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,8 @@ public enum EntityFilterType {
     RELATIONS_QUERY("relationsQuery"),
     ASSET_SEARCH_QUERY("assetSearchQuery"),
     DEVICE_SEARCH_QUERY("deviceSearchQuery"),
-    ENTITY_VIEW_SEARCH_QUERY("entityViewSearchQuery");
+    ENTITY_VIEW_SEARCH_QUERY("entityViewSearchQuery"),
+    API_USAGE_STATE("apiUsageState");
 
     private final String label;
 

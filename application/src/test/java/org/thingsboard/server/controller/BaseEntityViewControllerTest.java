@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -424,7 +425,7 @@ public abstract class BaseEntityViewControllerTest extends AbstractControllerTes
         assertNotNull(accessToken);
 
         String clientId = MqttAsyncClient.generateClientId();
-        MqttAsyncClient client = new MqttAsyncClient("tcp://localhost:1883", clientId);
+        MqttAsyncClient client = new MqttAsyncClient("tcp://localhost:1883", clientId, new MemoryPersistence());
 
         MqttConnectOptions options = new MqttConnectOptions();
         options.setUserName(accessToken);
@@ -466,7 +467,7 @@ public abstract class BaseEntityViewControllerTest extends AbstractControllerTes
         assertNotNull(accessToken);
 
         String clientId = MqttAsyncClient.generateClientId();
-        MqttAsyncClient client = new MqttAsyncClient("tcp://localhost:1883", clientId);
+        MqttAsyncClient client = new MqttAsyncClient("tcp://localhost:1883", clientId, new MemoryPersistence());
 
         MqttConnectOptions options = new MqttConnectOptions();
         options.setUserName(accessToken);

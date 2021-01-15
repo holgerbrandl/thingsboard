@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,12 @@ public abstract class RuleChainManagerActor extends ContextAwareActor {
             TbActorRef actorRef = getOrCreateActor(ruleChainId, id -> ruleChain);
             visit(ruleChain, actorRef);
             log.debug("[{}|{}] Rule Chain actor created.", ruleChainId.getEntityType(), ruleChainId.getId());
+        }
+    }
+
+    protected void destroyRuleChains() {
+        for (RuleChain ruleChain : new PageDataIterable<>(link -> ruleChainService.findTenantRuleChains(tenantId, link), ContextAwareActor.ENTITY_PACK_LIMIT)) {
+            ctx.stop(new TbEntityActorId(ruleChain.getId()));
         }
     }
 

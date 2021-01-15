@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,8 +87,9 @@ public class TbAwsSqsProducerTemplate<T extends TbQueueMsg> implements TbQueuePr
         sendMsgRequest.withQueueUrl(getQueueUrl(tpi.getFullTopicName()));
         sendMsgRequest.withMessageBody(gson.toJson(new DefaultTbQueueMsg(msg)));
 
-        sendMsgRequest.withMessageGroupId(tpi.getTopic());
-        sendMsgRequest.withMessageDeduplicationId(UUID.randomUUID().toString());
+        String sqsMsgId = UUID.randomUUID().toString();
+        sendMsgRequest.withMessageGroupId(sqsMsgId);
+        sendMsgRequest.withMessageDeduplicationId(sqsMsgId);
 
         ListenableFuture<SendMessageResult> future = producerExecutor.submit(() -> sqsClient.sendMessage(sendMsgRequest));
 

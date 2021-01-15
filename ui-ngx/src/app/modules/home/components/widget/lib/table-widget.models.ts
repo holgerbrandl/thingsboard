@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -184,12 +184,15 @@ export function getEntityValue(entity: any, key: DataKey): any {
 export function getAlarmValue(alarm: AlarmDataInfo, key: EntityColumn) {
   let alarmField = null;
   if (key.type === DataKeyType.alarm) {
-    alarmField = alarmFields[key.name];
+    alarmField = alarmFields[key.name]?.value;
+    if (!alarmField && key.name.startsWith('details.')) {
+      alarmField = key.name;
+    }
   }
   if (alarmField) {
-    return getDescendantProp(alarm, alarmField.value);
+    return getDescendantProp(alarm, alarmField);
   } else {
-    return getDescendantProp(alarm, key.name);
+    return getDescendantProp(alarm, key.label);
   }
 }
 

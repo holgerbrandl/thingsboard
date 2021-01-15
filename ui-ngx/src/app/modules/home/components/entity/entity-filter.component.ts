@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -147,6 +147,9 @@ export class EntityFilterComponent implements ControlValueAccessor, OnInit {
           entityViewNameFilter: [filter ? filter.entityViewNameFilter : '', []],
         });
         break;
+      case AliasFilterType.apiUsageState:
+        this.filterFormGroup = this.fb.group({});
+        break;
       case AliasFilterType.relationsQuery:
       case AliasFilterType.assetSearchQuery:
       case AliasFilterType.deviceSearchQuery:
@@ -190,7 +193,7 @@ export class EntityFilterComponent implements ControlValueAccessor, OnInit {
 
   private filterTypeChanged(type: AliasFilterType) {
     let resolveMultiple = true;
-    if (type === AliasFilterType.singleEntity || type === AliasFilterType.stateEntity) {
+    if (type === AliasFilterType.singleEntity || type === AliasFilterType.stateEntity || type === AliasFilterType.apiUsageState) {
       resolveMultiple = false;
     }
     if (this.resolveMultiple !== resolveMultiple) {

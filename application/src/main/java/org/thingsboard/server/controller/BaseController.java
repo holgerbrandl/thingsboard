@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,19 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.thingsboard.server.common.data.Customer;
-import org.thingsboard.server.common.data.Dashboard;
-import org.thingsboard.server.common.data.DashboardInfo;
-import org.thingsboard.server.common.data.DataConstants;
-import org.thingsboard.server.common.data.Device;
-import org.thingsboard.server.common.data.DeviceInfo;
-import org.thingsboard.server.common.data.EntityType;
-import org.thingsboard.server.common.data.EntityView;
-import org.thingsboard.server.common.data.EntityViewInfo;
-import org.thingsboard.server.common.data.HasName;
-import org.thingsboard.server.common.data.HasTenantId;
-import org.thingsboard.server.common.data.Tenant;
-import org.thingsboard.server.common.data.User;
+import org.thingsboard.server.common.data.*;
 import org.thingsboard.server.common.data.alarm.Alarm;
 import org.thingsboard.server.common.data.alarm.AlarmInfo;
 import org.thingsboard.server.common.data.asset.Asset;
@@ -52,17 +40,21 @@ import org.thingsboard.server.common.data.id.AssetId;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.DashboardId;
 import org.thingsboard.server.common.data.id.DeviceId;
+import org.thingsboard.server.common.data.id.DeviceProfileId;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.EntityIdFactory;
 import org.thingsboard.server.common.data.id.EntityViewId;
 import org.thingsboard.server.common.data.id.RuleChainId;
 import org.thingsboard.server.common.data.id.RuleNodeId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.id.TenantProfileId;
 import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.common.data.id.WidgetTypeId;
 import org.thingsboard.server.common.data.id.WidgetsBundleId;
 import org.thingsboard.server.common.data.kv.AttributeKvEntry;
 import org.thingsboard.server.common.data.kv.DataType;
+import org.thingsboard.server.common.data.kv.KvEntry;
+import org.thingsboard.server.common.data.kv.TsKvEntry;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.page.SortOrder;
 import org.thingsboard.server.common.data.page.TimePageLink;
@@ -82,13 +74,17 @@ import org.thingsboard.server.dao.customer.CustomerService;
 import org.thingsboard.server.dao.dashboard.DashboardService;
 import org.thingsboard.server.dao.device.ClaimDevicesService;
 import org.thingsboard.server.dao.device.DeviceCredentialsService;
+import org.thingsboard.server.dao.device.DeviceProfileService;
 import org.thingsboard.server.dao.device.DeviceService;
 import org.thingsboard.server.dao.entityview.EntityViewService;
 import org.thingsboard.server.dao.exception.DataValidationException;
 import org.thingsboard.server.dao.exception.IncorrectParameterException;
 import org.thingsboard.server.dao.model.ModelConstants;
+import org.thingsboard.server.dao.oauth2.OAuth2ConfigTemplateService;
+import org.thingsboard.server.dao.oauth2.OAuth2Service;
 import org.thingsboard.server.dao.relation.RelationService;
 import org.thingsboard.server.dao.rule.RuleChainService;
+import org.thingsboard.server.dao.tenant.TenantProfileService;
 import org.thingsboard.server.dao.tenant.TenantService;
 import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.dao.widget.WidgetTypeService;
@@ -98,6 +94,8 @@ import org.thingsboard.server.queue.discovery.PartitionService;
 import org.thingsboard.server.queue.provider.TbQueueProducerProvider;
 import org.thingsboard.server.queue.util.TbCoreComponent;
 import org.thingsboard.server.service.component.ComponentDiscoveryService;
+import org.thingsboard.server.service.profile.TbDeviceProfileCache;
+import org.thingsboard.server.dao.tenant.TbTenantProfileCache;
 import org.thingsboard.server.service.queue.TbClusterService;
 import org.thingsboard.server.service.security.model.SecurityUser;
 import org.thingsboard.server.service.security.permission.AccessControlService;
@@ -110,9 +108,11 @@ import org.thingsboard.server.service.telemetry.TelemetrySubscriptionService;
 import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.thingsboard.server.dao.service.Validator.validateId;
 
@@ -135,6 +135,9 @@ public abstract class BaseController {
     protected TenantService tenantService;
 
     @Autowired
+    protected TenantProfileService tenantProfileService;
+
+    @Autowired
     protected CustomerService customerService;
 
     @Autowired
@@ -142,6 +145,9 @@ public abstract class BaseController {
 
     @Autowired
     protected DeviceService deviceService;
+
+    @Autowired
+    protected DeviceProfileService deviceProfileService;
 
     @Autowired
     protected AssetService assetService;
@@ -160,6 +166,12 @@ public abstract class BaseController {
 
     @Autowired
     protected DashboardService dashboardService;
+
+    @Autowired
+    protected OAuth2Service oAuth2Service;
+
+    @Autowired
+    protected OAuth2ConfigTemplateService oAuth2ConfigTemplateService;
 
     @Autowired
     protected ComponentDiscoveryService componentDescriptorService;
@@ -196,6 +208,12 @@ public abstract class BaseController {
 
     @Autowired
     protected TbQueueProducerProvider producerProvider;
+
+    @Autowired
+    protected TbTenantProfileCache tenantProfileCache;
+
+    @Autowired
+    protected TbDeviceProfileCache deviceProfileCache;
 
     @Value("${server.log_controller_error_stack_trace}")
     @Getter
@@ -312,6 +330,30 @@ public abstract class BaseController {
         }
     }
 
+    TenantInfo checkTenantInfoId(TenantId tenantId, Operation operation) throws ThingsboardException {
+        try {
+            validateId(tenantId, INCORRECT_TENANT_ID + tenantId);
+            TenantInfo tenant = tenantService.findTenantInfoById(tenantId);
+            checkNotNull(tenant);
+            accessControlService.checkPermission(getCurrentUser(), Resource.TENANT, operation, tenantId, tenant);
+            return tenant;
+        } catch (Exception e) {
+            throw handleException(e, false);
+        }
+    }
+
+    TenantProfile checkTenantProfileId(TenantProfileId tenantProfileId, Operation operation) throws ThingsboardException {
+        try {
+            validateId(tenantProfileId, "Incorrect tenantProfileId " + tenantProfileId);
+            TenantProfile tenantProfile = tenantProfileService.findTenantProfileById(getTenantId(), tenantProfileId);
+            checkNotNull(tenantProfile);
+            accessControlService.checkPermission(getCurrentUser(), Resource.TENANT_PROFILE, operation);
+            return tenantProfile;
+        } catch (Exception e) {
+            throw handleException(e, false);
+        }
+    }
+
     protected TenantId getTenantId() throws ThingsboardException {
         return getCurrentUser().getTenantId();
     }
@@ -360,11 +402,17 @@ public abstract class BaseController {
                 case DEVICE:
                     checkDeviceId(new DeviceId(entityId.getId()), operation);
                     return;
+                case DEVICE_PROFILE:
+                    checkDeviceProfileId(new DeviceProfileId(entityId.getId()), operation);
+                    return;
                 case CUSTOMER:
                     checkCustomerId(new CustomerId(entityId.getId()), operation);
                     return;
                 case TENANT:
                     checkTenantId(new TenantId(entityId.getId()), operation);
+                    return;
+                case TENANT_PROFILE:
+                    checkTenantProfileId(new TenantProfileId(entityId.getId()), operation);
                     return;
                 case RULE_CHAIN:
                     checkRuleChain(new RuleChainId(entityId.getId()), operation);
@@ -417,6 +465,18 @@ public abstract class BaseController {
             checkNotNull(device);
             accessControlService.checkPermission(getCurrentUser(), Resource.DEVICE, operation, deviceId, device);
             return device;
+        } catch (Exception e) {
+            throw handleException(e, false);
+        }
+    }
+
+    DeviceProfile checkDeviceProfileId(DeviceProfileId deviceProfileId, Operation operation) throws ThingsboardException {
+        try {
+            validateId(deviceProfileId, "Incorrect deviceProfileId " + deviceProfileId);
+            DeviceProfile deviceProfile = deviceProfileService.findDeviceProfileById(getCurrentUser().getTenantId(), deviceProfileId);
+            checkNotNull(deviceProfile);
+            accessControlService.checkPermission(getCurrentUser(), Resource.DEVICE_PROFILE, operation, deviceProfileId, deviceProfile);
+            return deviceProfile;
         } catch (Exception e) {
             throw handleException(e, false);
         }
@@ -647,6 +707,18 @@ public abstract class BaseController {
             case ASSIGNED_TO_TENANT:
                 msgType = DataConstants.ENTITY_ASSIGNED_TO_TENANT;
                 break;
+            case PROVISION_SUCCESS:
+                msgType = DataConstants.PROVISION_SUCCESS;
+                break;
+            case PROVISION_FAILURE:
+                msgType = DataConstants.PROVISION_FAILURE;
+                break;
+            case TIMESERIES_UPDATED:
+                msgType = DataConstants.TIMESERIES_UPDATED;
+                break;
+            case TIMESERIES_DELETED:
+                msgType = DataConstants.TIMESERIES_DELETED;
+                break;
         }
         if (!StringUtils.isEmpty(msgType)) {
             try {
@@ -691,17 +763,7 @@ public abstract class BaseController {
                         metaData.putValue("scope", scope);
                         if (attributes != null) {
                             for (AttributeKvEntry attr : attributes) {
-                                if (attr.getDataType() == DataType.BOOLEAN) {
-                                    entityNode.put(attr.getKey(), attr.getBooleanValue().get());
-                                } else if (attr.getDataType() == DataType.DOUBLE) {
-                                    entityNode.put(attr.getKey(), attr.getDoubleValue().get());
-                                } else if (attr.getDataType() == DataType.LONG) {
-                                    entityNode.put(attr.getKey(), attr.getLongValue().get());
-                                } else if (attr.getDataType() == DataType.JSON) {
-                                    entityNode.set(attr.getKey(), json.readTree(attr.getJsonValue().get()));
-                                } else {
-                                    entityNode.put(attr.getKey(), attr.getValueAsString());
-                                }
+                                addKvEntry(entityNode, attr);
                             }
                         }
                     } else if (actionType == ActionType.ATTRIBUTES_DELETED) {
@@ -712,6 +774,17 @@ public abstract class BaseController {
                         if (keys != null) {
                             keys.forEach(attrsArrayNode::add);
                         }
+                    } else if (actionType == ActionType.TIMESERIES_UPDATED) {
+                        List<TsKvEntry> timeseries = extractParameter(List.class, 0, additionalInfo);
+                        addTimeseries(entityNode, timeseries);
+                    } else if (actionType == ActionType.TIMESERIES_DELETED) {
+                        List<String> keys = extractParameter(List.class, 0, additionalInfo);
+                        if (keys != null) {
+                            ArrayNode timeseriesArrayNode = entityNode.putArray("timeseries");
+                            keys.forEach(timeseriesArrayNode::add);
+                        }
+                        entityNode.put("startTs", extractParameter(Long.class, 1, additionalInfo));
+                        entityNode.put("endTs", extractParameter(Long.class, 2, additionalInfo));
                     }
                 }
                 TbMsg tbMsg = TbMsg.newMsg(msgType, entityId, metaData, TbMsgDataType.JSON, json.writeValueAsString(entityNode));
@@ -725,6 +798,22 @@ public abstract class BaseController {
             } catch (Exception e) {
                 log.warn("[{}] Failed to push entity action to rule engine: {}", entityId, actionType, e);
             }
+        }
+    }
+
+    private void addKvEntry(ObjectNode entityNode, KvEntry kvEntry) throws Exception {
+        if (kvEntry.getDataType() == DataType.BOOLEAN) {
+            kvEntry.getBooleanValue().ifPresent(value -> entityNode.put(kvEntry.getKey(), value));
+        } else if (kvEntry.getDataType() == DataType.DOUBLE) {
+            kvEntry.getDoubleValue().ifPresent(value -> entityNode.put(kvEntry.getKey(), value));
+        } else if (kvEntry.getDataType() == DataType.LONG) {
+            kvEntry.getLongValue().ifPresent(value -> entityNode.put(kvEntry.getKey(), value));
+        } else if (kvEntry.getDataType() == DataType.JSON) {
+            if (kvEntry.getJsonValue().isPresent()) {
+                entityNode.set(kvEntry.getKey(), json.readTree(kvEntry.getJsonValue().get()));
+            }
+        } else {
+            entityNode.put(kvEntry.getKey(), kvEntry.getValueAsString());
         }
     }
 
@@ -748,4 +837,20 @@ public abstract class BaseController {
         return null;
     }
 
+    private void addTimeseries(ObjectNode entityNode, List<TsKvEntry> timeseries) throws Exception {
+        if (timeseries != null && !timeseries.isEmpty()) {
+            ArrayNode result = entityNode.putArray("timeseries");
+            Map<Long, List<TsKvEntry>> groupedTelemetry = timeseries.stream()
+                    .collect(Collectors.groupingBy(TsKvEntry::getTs));
+            for (Map.Entry<Long, List<TsKvEntry>> entry : groupedTelemetry.entrySet()) {
+                ObjectNode element = json.createObjectNode();
+                element.put("ts", entry.getKey());
+                ObjectNode values = element.putObject("values");
+                for (TsKvEntry tsKvEntry : entry.getValue()) {
+                    addKvEntry(values, tsKvEntry);
+                }
+                result.add(element);
+            }
+        }
+    }
 }

@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -66,6 +66,12 @@ export class RuleChainService {
 
   public getRuleChain(ruleChainId: string, config?: RequestConfig): Observable<RuleChain> {
     return this.http.get<RuleChain>(`/api/ruleChain/${ruleChainId}`, defaultHttpOptionsFromConfig(config));
+  }
+
+  public createDefaultRuleChain(ruleChainName: string, config?: RequestConfig): Observable<RuleChain> {
+    return this.http.post<RuleChain>('/api/ruleChain/device/default', {
+      name: ruleChainName
+    }, defaultHttpOptionsFromConfig(config));
   }
 
   public saveRuleChain(ruleChain: RuleChain, config?: RequestConfig): Observable<RuleChain> {

@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -48,6 +48,10 @@ export class ComplexFilterPredicateComponent implements ControlValueAccessor, On
 
   @Input() key: string;
 
+  @Input() displayUserParameters = true;
+
+  @Input() allowUserDynamicSource = true;
+
   private propagateChange = null;
 
   private complexFilterPredicate: ComplexFilterPredicateInfo;
@@ -73,17 +77,19 @@ export class ComplexFilterPredicateComponent implements ControlValueAccessor, On
     this.complexFilterPredicate = predicate;
   }
 
-  private openComplexFilterDialog() {
+  public openComplexFilterDialog() {
     this.dialog.open<ComplexFilterPredicateDialogComponent, ComplexFilterPredicateDialogData,
       ComplexFilterPredicateInfo>(ComplexFilterPredicateDialogComponent, {
       disableClose: true,
       panelClass: ['tb-dialog', 'tb-fullscreen-dialog'],
       data: {
-        complexPredicate: deepClone(this.complexFilterPredicate),
-        disabled: this.disabled,
+        complexPredicate: this.disabled ? this.complexFilterPredicate : deepClone(this.complexFilterPredicate),
+        readonly: this.disabled,
         valueType: this.valueType,
         isAdd: false,
-        key: this.key
+        key: this.key,
+        displayUserParameters: this.displayUserParameters,
+        allowUserDynamicSource: this.allowUserDynamicSource
       }
     }).afterClosed().subscribe(
       (result) => {

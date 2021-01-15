@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Component;
 import org.thingsboard.server.common.data.Tenant;
+import org.thingsboard.server.common.data.TenantInfo;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.dao.DaoUtil;
 import org.thingsboard.server.dao.model.sql.TenantEntity;
+import org.thingsboard.server.dao.model.sql.TenantInfoEntity;
 import org.thingsboard.server.dao.sql.JpaAbstractSearchTextDao;
 import org.thingsboard.server.dao.tenant.TenantDao;
 
@@ -51,11 +53,25 @@ public class JpaTenantDao extends JpaAbstractSearchTextDao<TenantEntity, Tenant>
     }
 
     @Override
+    public TenantInfo findTenantInfoById(TenantId tenantId, UUID id) {
+        return DaoUtil.getData(tenantRepository.findTenantInfoById(id));
+    }
+
+    @Override
     public PageData<Tenant> findTenantsByRegion(TenantId tenantId, String region, PageLink pageLink) {
         return DaoUtil.toPageData(tenantRepository
                 .findByRegionNextPage(
                         region,
                         Objects.toString(pageLink.getTextSearch(), ""),
                         DaoUtil.toPageable(pageLink)));
+    }
+
+    @Override
+    public PageData<TenantInfo> findTenantInfosByRegion(TenantId tenantId, String region, PageLink pageLink) {
+        return DaoUtil.toPageData(tenantRepository
+                .findTenantInfoByRegionNextPage(
+                        region,
+                        Objects.toString(pageLink.getTextSearch(), ""),
+                        DaoUtil.toPageable(pageLink, TenantInfoEntity.tenantInfoColumnMap)));
     }
 }

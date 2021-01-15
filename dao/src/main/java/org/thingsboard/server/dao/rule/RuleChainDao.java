@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,14 @@ import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.rule.RuleChain;
 import org.thingsboard.server.dao.Dao;
+import org.thingsboard.server.dao.TenantEntityDao;
 
 import java.util.UUID;
 
 /**
  * Created by igor on 3/12/18.
  */
-public interface RuleChainDao extends Dao<RuleChain> {
+public interface RuleChainDao extends Dao<RuleChain>, TenantEntityDao {
 
     /**
      * Find rule chains by tenantId and page link.
@@ -35,5 +36,4 @@ public interface RuleChainDao extends Dao<RuleChain> {
      * @return the list of rule chain objects
      */
     PageData<RuleChain> findRuleChainsByTenantId(UUID tenantId, PageLink pageLink);
-
 }

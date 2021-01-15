@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 import L, {
   FeatureGroup,
-  Icon,
+  Icon, LatLng,
   LatLngBounds,
   LatLngTuple,
   markerClusterGroup,
   MarkerClusterGroup,
-  MarkerClusterGroupOptions
+  MarkerClusterGroupOptions, Projection
 } from 'leaflet';
 import tinycolor from 'tinycolor2';
 import 'leaflet-providers';
@@ -43,12 +43,15 @@ import { Observable, of } from 'rxjs';
 import { Polyline } from './polyline';
 import { Polygon } from './polygon';
 import {
-  createLoadingDiv,
   createTooltip,
+} from '@home/components/widget/lib/maps/maps-utils';
+import {
+  checkLngLat,
+  createLoadingDiv,
   parseArray,
   parseData,
   safeExecute
-} from '@home/components/widget/lib/maps/maps-utils';
+} from '@home/components/widget/lib/maps/common-maps-utils';
 import { WidgetContext } from '@home/models/widget-component.models';
 import { deepClone, isDefinedAndNotNull, isEmptyStr, isString } from '@core/utils';
 
@@ -77,6 +80,8 @@ export default abstract class LeafletMap {
     updatePending = false;
     addMarkers: L.Marker[] = [];
     addPolygons: L.Polygon[] = [];
+    southWest = new L.LatLng(-Projection.SphericalMercator['MAX_LATITUDE'], -180);
+    northEast = new L.LatLng(Projection.SphericalMercator['MAX_LATITUDE'], 180);
 
     protected constructor(public ctx: WidgetContext,
                           public $container: HTMLElement,
@@ -86,8 +91,7 @@ export default abstract class LeafletMap {
 
     public initSettings(options: MapSettings) {
         this.options.tinyColor = tinycolor(this.options.color || defaultSettings.color);
-        const { disableScrollZooming,
-            useClusterMarkers,
+        const { useClusterMarkers,
             zoomOnClick,
             showCoverageOnHover,
             removeOutsideVisibleBounds,
@@ -95,9 +99,6 @@ export default abstract class LeafletMap {
             chunkedLoading,
             maxClusterRadius,
             maxZoom }: MapSettings = options;
-        if (disableScrollZooming) {
-            this.map.scrollWheelZoom.disable();
-        }
         if (useClusterMarkers) {
             const clusteringSettings: MarkerClusterGroupOptions = {
                 zoomToBoundsOnClick: zoomOnClick,
@@ -135,14 +136,17 @@ export default abstract class LeafletMap {
                       tooltipAnchor: [16, -28],
                       shadowSize: [41, 41]
                     });
+                    const customLatLng = this.convertToCustomFormat(mousePositionOnMap);
+                    mousePositionOnMap.lat = customLatLng[this.options.latKeyName];
+                    mousePositionOnMap.lng = customLatLng[this.options.lngKeyName];
+
                     const newMarker = L.marker(mousePositionOnMap, { icon }).addTo(this.map);
                     this.addMarkers.push(newMarker);
                     const datasourcesList = document.createElement('div');
-                    const customLatLng = this.convertToCustomFormat(mousePositionOnMap);
                     const header = document.createElement('p');
                     header.appendChild(document.createTextNode('Select entity:'));
                     header.setAttribute('style', 'font-size: 14px; margin: 8px 0');
-                    datasourcesList.append(header);
+                    datasourcesList.appendChild(header);
                     this.datasources.forEach(ds => {
                         const dsItem = document.createElement('p');
                         dsItem.appendChild(document.createTextNode(ds.entityName));
@@ -159,9 +163,9 @@ export default abstract class LeafletMap {
                               this.createMarker(ds.entityName, updatedEnttity, this.datasources, this.options);
                             });
                         };
-                        datasourcesList.append(dsItem);
+                        datasourcesList.appendChild(dsItem);
                     });
-                    datasourcesList.append(document.createElement('br'));
+                    datasourcesList.appendChild(document.createElement('br'));
                     const deleteBtn = document.createElement('a');
                     deleteBtn.appendChild(document.createTextNode('Discard changes'));
                     deleteBtn.onclick = () => {
@@ -171,7 +175,7 @@ export default abstract class LeafletMap {
                           this.addMarkers.splice(markerIndex, 1);
                         }
                     };
-                    datasourcesList.append(deleteBtn);
+                    datasourcesList.appendChild(deleteBtn);
                     const popup = L.popup();
                     popup.setContent(datasourcesList);
                     newMarker.bindPopup(popup).openPopup();
@@ -205,25 +209,34 @@ export default abstract class LeafletMap {
 
   addPolygonControl() {
     if (this.options.showPolygon && this.options.editablePolygon) {
-      let mousePositionOnMap: L.LatLng[];
+      let polygonPoints: L.LatLng[];
       let addPolygon: L.Control;
+      let mousePositionOnMap: LatLng;
       this.map.on('mousemove', (e: L.LeafletMouseEvent) => {
-        const polygonOffset = this.options.provider === MapProviders.image ? 10 : 0.01;
-        const latlng1 = e.latlng;
-        const latlng2 = L.latLng(e.latlng.lat, e.latlng.lng + polygonOffset);
-        const latlng3 = L.latLng(e.latlng.lat - polygonOffset, e.latlng.lng);
-        mousePositionOnMap = [latlng1, latlng2, latlng3];
+        mousePositionOnMap = e.latlng;
       });
+
       const dragListener = (e: L.DragEndEvent) => {
-        if (e.type === 'dragend' && mousePositionOnMap) {
-          const newPolygon = L.polygon(mousePositionOnMap).addTo(this.map);
+        if (e.type === 'dragend') {
+          const polygonOffset = this.options.provider === MapProviders.image ? 10 : 0.01;
+
+          let convert = this.convertToCustomFormat(mousePositionOnMap,polygonOffset);
+          mousePositionOnMap.lat = convert[this.options.latKeyName];
+          mousePositionOnMap.lng = convert[this.options.lngKeyName];
+
+          const latlng1 = mousePositionOnMap;
+          const latlng2 = L.latLng(mousePositionOnMap.lat, mousePositionOnMap.lng + polygonOffset);
+          const latlng3 = L.latLng(mousePositionOnMap.lat - polygonOffset, mousePositionOnMap.lng);
+          polygonPoints = [latlng1, latlng2, latlng3];
+
+          const newPolygon = L.polygon(polygonPoints).addTo(this.map);
           this.addPolygons.push(newPolygon);
           const datasourcesList = document.createElement('div');
-          const customLatLng = {[this.options.polygonKeyName]: this.convertToPolygonFormat(mousePositionOnMap)};
+          const customLatLng = {[this.options.polygonKeyName]: this.convertToPolygonFormat(polygonPoints)};
           const header = document.createElement('p');
           header.appendChild(document.createTextNode('Select entity:'));
           header.setAttribute('style', 'font-size: 14px; margin: 8px 0');
-          datasourcesList.append(header);
+          datasourcesList.appendChild(header);
           this.datasources.forEach(ds => {
             const dsItem = document.createElement('p');
             dsItem.appendChild(document.createTextNode(ds.entityName));
@@ -239,9 +252,9 @@ export default abstract class LeafletMap {
                 this.deletePolygon(ds.entityName);
               });
             };
-            datasourcesList.append(dsItem);
+            datasourcesList.appendChild(dsItem);
           });
-          datasourcesList.append(document.createElement('br'));
+          datasourcesList.appendChild(document.createElement('br'));
           const deleteBtn = document.createElement('a');
           deleteBtn.appendChild(document.createTextNode('Discard changes'));
           deleteBtn.onclick = () => {
@@ -251,7 +264,7 @@ export default abstract class LeafletMap {
               this.addPolygons.splice(polygonIndex, 1);
             }
           };
-          datasourcesList.append(deleteBtn);
+          datasourcesList.appendChild(deleteBtn);
           const popup = L.popup();
           popup.setContent(datasourcesList);
           newPolygon.bindPopup(popup).openPopup();
@@ -290,7 +303,7 @@ export default abstract class LeafletMap {
           if (!this.loadingDiv) {
             this.loadingDiv = createLoadingDiv(this.ctx.translate.instant('common.loading'));
           }
-          this.$container.append(this.loadingDiv[0]);
+          this.$container.appendChild(this.loadingDiv[0]);
         } else {
           if (this.loadingDiv) {
             this.loadingDiv.remove();
@@ -307,8 +320,11 @@ export default abstract class LeafletMap {
         } else {
           this.bounds = new L.LatLngBounds(null, null);
         }
+        if (this.options.disableScrollZooming) {
+          this.map.scrollWheelZoom.disable();
+        }
         if (this.options.draggableMarker) {
-            this.addMarkerControl();
+          this.addMarkerControl();
         }
         if (this.options.editablePolygon) {
           this.addPolygonControl();
@@ -410,11 +426,13 @@ export default abstract class LeafletMap {
         }).filter(el => !!el);
     }
 
-    convertToCustomFormat(position: L.LatLng): object {
-        return {
-            [this.options.latKeyName]: position.lat % 90,
-            [this.options.lngKeyName]: position.lng % 180
-        };
+    convertToCustomFormat(position: L.LatLng, offset = 0): object {
+      position = checkLngLat(position, this.southWest, this.northEast, offset);
+
+      return {
+        [this.options.latKeyName]: position.lat,
+        [this.options.lngKeyName]: position.lng
+      };
     }
 
     convertToPolygonFormat(points: Array<any>): Array<any> {
@@ -480,7 +498,8 @@ export default abstract class LeafletMap {
     }
 
     const mapBounds = this.map.getBounds();
-    if (bounds.isValid() && (!this.bounds || !this.bounds.isValid() || !this.bounds.equals(bounds) && !mapBounds.contains(bounds))) {
+    if (bounds.isValid() && (!this.bounds || !this.bounds.isValid() || !this.bounds.equals(bounds)
+        && this.options.fitMapBounds ? !mapBounds.contains(bounds) : false)) {
       this.bounds = bounds;
       this.fitBounds(bounds);
     }
@@ -571,10 +590,10 @@ export default abstract class LeafletMap {
         const marker: Marker = this.markers.get(key);
         const location = this.convertPosition(data);
         marker.updateMarkerPosition(location);
+        marker.setDataSources(data, dataSources);
         if (settings.showTooltip) {
             marker.updateMarkerTooltip(data);
         }
-        marker.setDataSources(data, dataSources);
         marker.updateMarkerIcon(settings);
         return marker;
     }
@@ -600,33 +619,38 @@ export default abstract class LeafletMap {
       return polygon;
     }
 
-    updatePoints(pointsData: FormattedData[], getTooltip: (point: FormattedData, setTooltip?: boolean) => string) {
+  updatePoints(pointsData: FormattedData[][], getTooltip: (point: FormattedData) => string) {
+    if (pointsData.length) {
       if (this.points) {
-          this.map.removeLayer(this.points);
+        this.map.removeLayer(this.points);
       }
       this.points = new FeatureGroup();
-      pointsData.filter(pdata => !!this.convertPosition(pdata)).forEach(data => {
-          const point = L.circleMarker(this.convertPosition(data), {
-              color: this.options.pointColor,
-              radius: this.options.pointSize
-          });
-          if (!this.options.pointTooltipOnRightPanel) {
-              point.on('click', () => getTooltip(data));
-          }
-          else {
-              createTooltip(point, this.options, data.$datasource, getTooltip(data, false));
-          }
-          this.points.addLayer(point);
+    }
+    for (const pointsList of pointsData) {
+      pointsList.filter(pdata => !!this.convertPosition(pdata)).forEach(data => {
+        const point = L.circleMarker(this.convertPosition(data), {
+          color: this.options.pointColor,
+          radius: this.options.pointSize
+        });
+        if (!this.options.pointTooltipOnRightPanel) {
+          point.on('click', () => getTooltip(data));
+        } else {
+          createTooltip(point, this.options, data.$datasource, getTooltip(data));
+        }
+        this.points.addLayer(point);
       });
+    }
+    if (pointsData.length) {
       this.map.addLayer(this.points);
     }
+  }
 
     // Polyline
 
-    updatePolylines(polyData: FormattedData[][], updateBounds = true, data?: FormattedData) {
+    updatePolylines(polyData: FormattedData[][], updateBounds = true, activePolyline?: FormattedData) {
         const keys: string[] = [];
         polyData.forEach((dataSource: FormattedData[]) => {
-            data = data || dataSource[0];
+            const data = activePolyline || dataSource[0];
             if (dataSource.length && data.entityName === dataSource[0].entityName) {
                 if (this.polylines.get(data.entityName)) {
                     this.updatePolyline(data, dataSource, this.options, updateBounds);
@@ -712,6 +736,11 @@ export default abstract class LeafletMap {
   dragPolygonVertex = (e?, data = {} as FormattedData) => {
     if (e === undefined || (e.type !== 'editable:vertex:dragend' && e.type !== 'editable:vertex:deleted')) {
       return;
+    }
+    if(this.options.provider !== MapProviders.image) {
+      for (let key in e.layer._latlngs[0]) {
+        e.layer._latlngs[0][key] = checkLngLat(e.layer._latlngs[0][key], this.southWest, this.northEast);
+      }
     }
     this.savePolygonLocation({ ...data, ...this.convertPolygonToCustomFormat(e.layer._latlngs) }).subscribe();
   }

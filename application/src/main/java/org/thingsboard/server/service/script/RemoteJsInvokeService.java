@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ import org.thingsboard.server.gen.js.JsInvokeProtos;
 import org.thingsboard.server.queue.TbQueueRequestTemplate;
 import org.thingsboard.server.queue.common.TbProtoJsQueueMsg;
 import org.thingsboard.server.queue.common.TbProtoQueueMsg;
+import org.thingsboard.server.queue.usagestats.TbApiUsageClient;
+import org.thingsboard.server.service.apiusage.TbApiUsageStateService;
 
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
@@ -67,6 +69,10 @@ public class RemoteJsInvokeService extends AbstractJsInvokeService {
     private final AtomicInteger queueEvalMsgs = new AtomicInteger(0);
     private final AtomicInteger queueFailedMsgs = new AtomicInteger(0);
     private final AtomicInteger queueTimeoutMsgs = new AtomicInteger(0);
+
+    public RemoteJsInvokeService(TbApiUsageStateService apiUsageStateService, TbApiUsageClient apiUsageClient) {
+        super(apiUsageStateService, apiUsageClient);
+    }
 
     @Scheduled(fixedDelayString = "${js.remote.stats.print_interval_ms}")
     public void printStats() {

@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import { FormBuilder } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Constants } from '@shared/models/constants';
 import { Router } from '@angular/router';
-import { OAuth2Client } from '@shared/models/login.models';
+import { OAuth2ClientInfo } from '@shared/models/oauth2.models';
 
 @Component({
   selector: 'tb-login',
@@ -36,7 +36,7 @@ export class LoginComponent extends PageComponent implements OnInit {
     username: '',
     password: ''
   });
-  oauth2Clients: Array<OAuth2Client> = null;
+  oauth2Clients: Array<OAuth2ClientInfo> = null;
 
   constructor(protected store: Store<AppState>,
               private authService: AuthService,

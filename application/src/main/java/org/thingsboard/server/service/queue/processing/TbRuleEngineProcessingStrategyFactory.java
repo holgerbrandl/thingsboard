@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,9 @@ public class TbRuleEngineProcessingStrategyFactory {
         private final boolean retryTimeout;
         private final int maxRetries;
         private final double maxAllowedFailurePercentage;
-        private final long pauseBetweenRetries;
+        private final long maxPauseBetweenRetries;
+
+        private long pauseBetweenRetries;
 
         private int initialTotalCount;
         private int retryCount;
@@ -69,6 +71,7 @@ public class TbRuleEngineProcessingStrategyFactory {
             this.maxRetries = configuration.getRetries();
             this.maxAllowedFailurePercentage = configuration.getFailurePercentage();
             this.pauseBetweenRetries = configuration.getPauseBetweenRetries();
+            this.maxPauseBetweenRetries = configuration.getMaxPauseBetweenRetries();
         }
 
         @Override
@@ -107,6 +110,9 @@ public class TbRuleEngineProcessingStrategyFactory {
                             Thread.sleep(TimeUnit.SECONDS.toMillis(pauseBetweenRetries));
                         } catch (InterruptedException e) {
                             throw new RuntimeException(e);
+                        }
+                        if (maxPauseBetweenRetries > pauseBetweenRetries) {
+                            pauseBetweenRetries = Math.min(maxPauseBetweenRetries, pauseBetweenRetries * 2);
                         }
                     }
                     return new TbRuleEngineProcessingDecision(false, toReprocess);

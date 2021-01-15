@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -76,6 +76,12 @@ export class EntityAutocompleteComponent implements ControlValueAccessor, OnInit
 
   @Input()
   excludeEntityIds: Array<string>;
+
+  @Input()
+  labelText: string;
+
+  @Input()
+  requiredText: string;
 
   private requiredValue: boolean;
   get required(): boolean {
@@ -211,6 +217,12 @@ export class EntityAutocompleteComponent implements ControlValueAccessor, OnInit
           }
           break;
       }
+    }
+    if (this.labelText && this.labelText.length) {
+      this.entityText = this.labelText;
+    }
+    if (this.requiredText && this.requiredText.length) {
+      this.entityRequiredText = this.requiredText;
     }
     const currentEntity = this.getCurrentEntity();
     if (currentEntity) {

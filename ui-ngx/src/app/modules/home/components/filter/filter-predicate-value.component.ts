@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -47,17 +47,32 @@ export class FilterPredicateValueComponent implements ControlValueAccessor, OnIn
   @Input() disabled: boolean;
 
   @Input()
+  set allowUserDynamicSource(allow: boolean) {
+    this.dynamicValueSourceTypes = [DynamicValueSourceType.CURRENT_TENANT,
+      DynamicValueSourceType.CURRENT_CUSTOMER];
+    this.allow = allow;
+    if (allow) {
+      this.dynamicValueSourceTypes.push(DynamicValueSourceType.CURRENT_USER);
+    } else {
+      this.dynamicValueSourceTypes = [DynamicValueSourceType.CURRENT_DEVICE];
+    }
+  }
+
+  @Input()
   valueType: EntityKeyValueType;
 
   valueTypeEnum = EntityKeyValueType;
 
-  dynamicValueSourceTypes = Object.keys(DynamicValueSourceType);
-  dynamicValueSourceTypeEnum = DynamicValueSourceType;
+  dynamicValueSourceTypes: DynamicValueSourceType[] = [DynamicValueSourceType.CURRENT_TENANT,
+    DynamicValueSourceType.CURRENT_CUSTOMER, DynamicValueSourceType.CURRENT_USER];
+
   dynamicValueSourceTypeTranslations = dynamicValueSourceTypeTranslationMap;
 
   filterPredicateValueFormGroup: FormGroup;
 
   dynamicMode = false;
+
+  allow = true;
 
   private propagateChange = null;
 

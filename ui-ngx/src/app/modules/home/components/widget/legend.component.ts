@@ -1,5 +1,5 @@
 ///
-/// Copyright © 2016-2020 The Thingsboard Authors
+/// Copyright © 2016-2021 The Thingsboard Authors
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -60,8 +60,11 @@ export class LegendComponent implements OnInit {
   }
 
   legendKeys(): LegendKey[] {
-    return this.legendData.keys
-      .filter(legendKey => this.legendData.keys[legendKey.dataIndex].dataKey.inLegend);
+    let keys = this.legendData.keys;
+    if (this.legendConfig.sortDataKeys) {
+      keys = this.legendData.keys.sort((key1, key2) => key1.dataKey.label.localeCompare(key2.dataKey.label));
+    }
+    return keys.filter(legendKey => this.legendData.keys[legendKey.dataIndex].dataKey.inLegend);
   }
 
 }

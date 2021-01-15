@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public class MqttNoSqlTestSuite {
 
     @ClassRule
     public static CustomSqlUnit sqlUnit = new CustomSqlUnit(
-            Arrays.asList("sql/schema-entities-hsql.sql", "sql/system-data.sql"),
+            Arrays.asList("sql/schema-types-hsql.sql", "sql/schema-entities-hsql.sql", "sql/system-data.sql"),
             "sql/hsql/drop-all-tables.sql",
             "nosql-test.properties");
 

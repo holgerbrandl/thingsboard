@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.thingsboard.server.common.data.Customer;
 import org.thingsboard.server.common.data.Device;
+import org.thingsboard.server.common.data.DeviceProfile;
 import org.thingsboard.server.common.data.EntitySubtype;
 import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.User;
@@ -185,9 +186,8 @@ public abstract class BaseDeviceControllerTest extends AbstractControllerTest {
     public void testSaveDeviceWithEmptyType() throws Exception {
         Device device = new Device();
         device.setName("My device");
-        doPost("/api/device", device)
-                .andExpect(status().isBadRequest())
-                .andExpect(statusReason(containsString("Device type should be specified")));
+        Device savedDevice = doPost("/api/device", device, Device.class);
+        Assert.assertEquals("default", savedDevice.getType());
     }
 
     @Test

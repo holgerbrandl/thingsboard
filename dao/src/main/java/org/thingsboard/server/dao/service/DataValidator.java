@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,9 @@ package org.thingsboard.server.dao.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.thingsboard.server.common.data.BaseData;
+import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.dao.TenantEntityDao;
 import org.thingsboard.server.dao.exception.DataValidationException;
 
 import java.util.HashSet;
@@ -77,6 +79,19 @@ public abstract class DataValidator<D extends BaseData<?>> {
 
         Matcher emailMatcher = EMAIL_PATTERN.matcher(email);
         return emailMatcher.matches();
+    }
+
+    protected void validateNumberOfEntitiesPerTenant(TenantId tenantId,
+                                                     TenantEntityDao tenantEntityDao,
+                                                     long maxEntities,
+                                                     EntityType entityType) {
+        if (maxEntities > 0) {
+            long currentEntitiesCount = tenantEntityDao.countByTenantId(tenantId);
+            if (currentEntitiesCount >= maxEntities) {
+                throw new DataValidationException(String.format("Can't create more then %d %ss!",
+                        maxEntities, entityType.name().toLowerCase().replaceAll("_", " ")));
+            }
+        }
     }
 
     protected static void validateJsonStructure(JsonNode expectedNode, JsonNode actualNode) {

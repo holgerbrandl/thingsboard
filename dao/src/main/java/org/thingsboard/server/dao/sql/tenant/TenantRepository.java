@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016-2020 The Thingsboard Authors
+ * Copyright © 2016-2021 The Thingsboard Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.thingsboard.server.dao.model.sql.TenantEntity;
+import org.thingsboard.server.dao.model.sql.TenantInfoEntity;
 
 import java.util.UUID;
 
@@ -29,9 +30,24 @@ import java.util.UUID;
  */
 public interface TenantRepository extends PagingAndSortingRepository<TenantEntity, UUID> {
 
+    @Query("SELECT new org.thingsboard.server.dao.model.sql.TenantInfoEntity(t, p.name) " +
+            "FROM TenantEntity t " +
+            "LEFT JOIN TenantProfileEntity p on p.id = t.tenantProfileId " +
+            "WHERE t.id = :tenantId")
+    TenantInfoEntity findTenantInfoById(@Param("tenantId") UUID tenantId);
+
     @Query("SELECT t FROM TenantEntity t WHERE t.region = :region " +
             "AND LOWER(t.searchText) LIKE LOWER(CONCAT(:textSearch, '%'))")
     Page<TenantEntity> findByRegionNextPage(@Param("region") String region,
                                             @Param("textSearch") String textSearch,
                                             Pageable pageable);
+
+    @Query("SELECT new org.thingsboard.server.dao.model.sql.TenantInfoEntity(t, p.name) " +
+            "FROM TenantEntity t " +
+            "LEFT JOIN TenantProfileEntity p on p.id = t.tenantProfileId " +
+            "WHERE t.region = :region " +
+            "AND LOWER(t.searchText) LIKE LOWER(CONCAT(:textSearch, '%'))")
+    Page<TenantInfoEntity> findTenantInfoByRegionNextPage(@Param("region") String region,
+                                                          @Param("textSearch") String textSearch,
+                                                          Pageable pageable);
 }
